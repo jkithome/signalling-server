@@ -63,11 +63,9 @@ wss.on("connection", ws => {
             message: "Username is unavailable"
           });
         } else {
+          const loggedIn = Object.keys(users).map(user => ({ userName: user }));
           users[data.name] = ws;
           ws.name = data.name;
-          const loggedIn = Object.keys(users)
-            .filter(user => user !== ws.name)
-            .map(user => ({ userName: user }));
 
           sendTo(ws, {
             type: "login",
