@@ -23,21 +23,18 @@ const sendTo = (connection, message) => {
   connection.send(JSON.stringify(message));
 };
 
-const updateUserList = clients => {
-  const users = Object.keys(clients);
-  users.forEach(user => {
-    let client = clients[user];
-    const loggedIn = users
-      .filter(user => user !== client.name)
-      .map(user => ({ userName: user }));
-
-    client.send(
-      JSON.stringify({
-        type: "updateUsers",
-        users: loggedIn
-      })
-    );
-  });
+const pushNewUser = (clients, { name: userName }) => {
+  Object.keys(clients).forEach(key=> {
+    const client = clients[key];
+    if(client.name !== userName) {
+      client.send(
+        JSON.stringify({
+          type: "updateUsers",
+          user: { userName }
+        })
+      );
+    }
+  })
 };
 
 wss.on("connection", ws => {
@@ -72,7 +69,7 @@ wss.on("connection", ws => {
             success: true,
             users: loggedIn
           });
-          updateUserList(users);
+          pushNewUser(users, ws);
         }
         break;
       case "offer":
