@@ -5,6 +5,7 @@ const http = require("http");
 
 const app = express();
 
+const port = process.env.PORT || 9000;
 // Error handler
 if (process.env.NODE_ENV === "dev") {
   // only use in development
@@ -153,6 +154,6 @@ wss.on("connection", ws => {
 });
 
 //start our server
-server.listen(9000, () => {
+server.listen(port, () => {
   console.log(`Server started on port ${server.address().port} :)`);
 });
