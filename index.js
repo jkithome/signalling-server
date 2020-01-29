@@ -1,16 +1,10 @@
 const express = require("express");
-const errorHandler = require("errorhandler");
 const WebSocket = require("ws");
 const http = require("http");
 
 const app = express();
 
 const port = process.env.PORT || 9000;
-// Error handler
-if (process.env.NODE_ENV === "dev") {
-  // only use in development
-  app.use(errorHandler());
-}
 
 //initialize a http server
 const server = http.createServer(app);
