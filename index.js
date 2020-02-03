@@ -19,18 +19,17 @@ const sendTo = (connection, message) => {
   connection.send(JSON.stringify(message));
 };
 
-const pushNewUser = (clients, { name: userName }) => {
-  Object.keys(clients).forEach(key => {
-    const client = clients[key];
-    if (client.name !== userName) {
+const sendToAll = (clients, type, { id, name: userName }) => {
+  Object.values(clients).forEach(client => {
+    if(client.name !== userName) {
       client.send(
         JSON.stringify({
-          type: "updateUsers",
-          user: { userName }
+          type,
+          user: { id, userName }
         })
-      );
+      )
     }
-  });
+  })
 };
 
 wss.on("connection", ws => {
@@ -71,7 +70,7 @@ wss.on("connection", ws => {
             success: true,
             users: loggedIn
           });
-          pushNewUser(users, ws);
+          sendToAll(users, "updateUsers", ws);
         }
         break;
       case "offer":
@@ -138,11 +137,9 @@ wss.on("connection", ws => {
         const recipient = users[ws.otherName];
         if (!!recipient) {
           recipient.otherName = null;
-          sendTo(recipient, {
-            type: "leave"
-          });
         }
       }
+      sendToAll(users, "removeUser", ws);
     }
   });
   //send immediatly a feedback to the incoming connection
