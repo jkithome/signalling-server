@@ -1,6 +1,7 @@
 const express = require("express");
 const WebSocket = require("ws");
 const http = require("http");
+const uuidv4 = require("uuid/v4");
 
 const app = express();
 
@@ -19,9 +20,9 @@ const sendTo = (connection, message) => {
 };
 
 const pushNewUser = (clients, { name: userName }) => {
-  Object.keys(clients).forEach(key=> {
+  Object.keys(clients).forEach(key => {
     const client = clients[key];
-    if(client.name !== userName) {
+    if (client.name !== userName) {
       client.send(
         JSON.stringify({
           type: "updateUsers",
@@ -29,7 +30,7 @@ const pushNewUser = (clients, { name: userName }) => {
         })
       );
     }
-  })
+  });
 };
 
 wss.on("connection", ws => {
@@ -44,20 +45,26 @@ wss.on("connection", ws => {
       console.log("Invalid JSON");
       data = {};
     }
-    switch (data.type) {
+    const { type, name, offer, answer, candidate } = data;
+    switch (type) {
       //when a user tries to login
       case "login":
         //Check if username is available
-        if (users[data.name]) {
+        if (users[name]) {
           sendTo(ws, {
             type: "login",
             success: false,
             message: "Username is unavailable"
           });
         } else {
-          const loggedIn = Object.keys(users).map(user => ({ userName: user }));
-          users[data.name] = ws;
-          ws.name = data.name;
+          const id = uuidv4();
+          const loggedIn = Object.values(
+            users
+          ).map(({ id, name: userName }) => ({ id, userName }));
+          // const loggedIn = Object.keys(users).map(user => ({ userName: user }));
+          users[name] = ws;
+          ws.name = name;
+          ws.id = id;
 
           sendTo(ws, {
             type: "login",
@@ -69,42 +76,42 @@ wss.on("connection", ws => {
         break;
       case "offer":
         //if UserBexists then send him offer details
-        const offerRecipient = users[data.name];
+        const offerRecipient = users[name];
 
         if (!!offerRecipient) {
           //setting that sender connected with cecipient
-          ws.otherName = data.name;
+          ws.otherName = name;
           sendTo(offerRecipient, {
             type: "offer",
-            offer: data.offer,
+            offer,
             name: ws.name
           });
         }
         break;
       case "answer":
         //for ex. UserB answers UserA
-        const answerRecipient = users[data.name];
+        const answerRecipient = users[name];
 
         if (!!answerRecipient) {
-          ws.otherName = data.name;
+          ws.otherName = name;
           sendTo(answerRecipient, {
             type: "answer",
-            answer: data.answer
+            answer
           });
         }
         break;
       case "candidate":
-        const candidateRecipient = users[data.name];
+        const candidateRecipient = users[name];
 
         if (!!candidateRecipient) {
           sendTo(candidateRecipient, {
             type: "candidate",
-            candidate: data.candidate
+            candidate
           });
         }
         break;
       case "leave":
-        recipient = users[data.name];
+        recipient = users[name];
 
         //notify the other user so he can disconnect his peer connection
         if (!!recipient) {
@@ -117,7 +124,7 @@ wss.on("connection", ws => {
       default:
         sendTo(ws, {
           type: "error",
-          message: "Command not found: " + data.type
+          message: "Command not found: " + type
         });
         break;
     }
